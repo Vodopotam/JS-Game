@@ -23,57 +23,55 @@ class Actor {
     this.pos = pos;
     this.size = size;
     this.speed = speed;
-  }
-  act() {}
-  get left() {
-    return this.pos.x;
-  }
-  get top() {
-    return this.pos.y;
-  }
-  get right() {
-    return this.pos.x + this.size.x;
-  }
-  get bottom() {
-    return this.pos.y + this.size.y;
-  }
-  get type() {
-    return 'actor';
-  }
-  isIntersect(actor) {
-    if (!(actor instanceof Actor) || !actor) {
-      	throw new Error(`Можно прибавлять к вектору только вектор типа Actor`);
-    }
-    if (actor === this) {
-     	return false;
-    }
-   	return this.left < actor.right && this.bottom > actor.top && this.right > actor.left && this.top < actor.bottom;
+  	}
+  	act() {}
+  	get left() {
+   		return this.pos.x;
+  	}
+  	get top() {
+    	return this.pos.y;
+  	}
+  	get right() {
+    	return this.pos.x + this.size.x;
+  	}
+  	get bottom() {
+    	return this.pos.y + this.size.y;
+  	}
+  	get type() {
+    	return 'actor';
+  	}
+  	isIntersect(actor) {
+    	if (!(actor instanceof Actor) || !actor) {
+      		throw new Error(`Можно прибавлять к вектору только вектор типа Actor`);
+    	}
+    	if (actor === this) {
+     		return false;
+    	}
+   		return this.left < actor.right && this.bottom > actor.top && this.right > actor.left && this.top < actor.bottom;
   	}
 }
 
 class Level {
-  constructor(grid = [], actors = []) {
-    this.grid = grid;
-    this.actors = actors;
-    this.player = this.actors.find(actor => actor.type === 'player');
-    this.height = this.grid.length;
-    this.width = this.grid.reduce((a, b) => {
+  	constructor(grid = [], actors = []) {
+    	this.grid = grid;
+    	this.actors = actors;
+    	this.player = this.actors.find(actor => actor.type === 'player');
+    	this.height = this.grid.length;
+    	this.width = this.grid.reduce((a, b) => {
 			return b.length > a ? b.length : a;
 		}, 0);
-    this.status = null;
-    this.finishDelay = 1;
-  }
-  
-isFinished() {
-   	return (this.status !== null && this.finishDelay < 0) ? true : false;
-}
-  
-  actorAt(actor) {
-    if (!(actor instanceof Actor) || !actor) {
-      	throw new Error(`Можно прибавлять к вектору только вектор типа Actor`);
-    }
-    return (!this.actors) ? undefined : 
-    this.actors.find(currentActor => currentActor.isIntersect(actor));
+    	this.status = null;
+    	this.finishDelay = 1;
+  	}
+	isFinished() {
+   		return (this.status !== null && this.finishDelay < 0) ? true : false;
+	}
+  	actorAt(actor) {
+    	if (!(actor instanceof Actor) || !actor) {
+      		throw new Error(`Можно прибавлять к вектору только вектор типа Actor`);
+    	}
+    	return (!this.actors) ? undefined : 
+    	this.actors.find(currentActor => currentActor.isIntersect(actor));
     }
   
   	obstacleAt(pos, size) {
@@ -86,7 +84,7 @@ isFinished() {
     	const topBorder = Math.floor(pos.y);
     	if (rightBorder > this.width || leftBorder < 0 || topBorder < 0) {
       		return 'wall';
-   		 }
+   		}
     	if (bottomBorder > this.height) {
       		return 'lava';
     	}
@@ -262,8 +260,8 @@ const actorDict = {
 const parser = new LevelParser(actorDict);
 
 loadLevels()
-  .then(schemas => {
-    runGame(JSON.parse(schemas), parser, DOMDisplay)
-      .then(() => alert('Вы выиграли!'))
-  });
+  	.then(schemas => {
+    	runGame(JSON.parse(schemas), parser, DOMDisplay)
+      		.then(() => alert('Вы выиграли!'))
+  	})
 
