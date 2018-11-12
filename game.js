@@ -137,9 +137,9 @@ class LevelParser {
   createActors(stringArr = []) {
     return stringArr.reduce((string, row, y) => {
       row.split('').forEach((cell, x) => {
-        const constructor = this.actorFromSymbol(cell);
-        if (typeof constructor === 'function') {
-          const actor = new constructor(new Vector(x, y));
+        const obj = this.actorFromSymbol(cell);
+        if (typeof obj === 'function') {
+          const actor = new obj(new Vector(x, y));
           if (actor instanceof Actor) {
             string.push(actor);
           }
@@ -202,7 +202,7 @@ class Coin extends Actor {
     super(pos.plus(new Vector(0.2, 0.1)), new Vector(0.6, 0.6));
     this.springSpeed = 8;
     this.springDist = 0.07;
-    this.spring = Math.random() * (2 * Math.PI);
+    this.spring = Math.random() * 2 * Math.PI;
     this.startPos = new Vector(this.pos.x, this.pos.y);
   }
   get type() {
