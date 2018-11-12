@@ -57,6 +57,7 @@ class Level {
     this.actors = actors;
     this.player = this.actors.find(actor => actor.type === 'player');
     this.height = this.grid.length;
+    // здесь можно использовать сокращённый вариант записи стрелочной функции
     this.width = this.grid.reduce((a, b) => {
       return b.length > a ? b.length : a;
     }, 0);
@@ -64,13 +65,20 @@ class Level {
     this.finishDelay = 1;
   }
   isFinished() {
+    // здесь не нужен тренарный оператор сравнения
+    // this.status !== null && this.finishDelay < 0 это уже true или false
     return (this.status !== null && this.finishDelay < 0) ? true : false;
   }
   actorAt(actor) {
     if (!(actor instanceof Actor) || !actor) {
       throw new Error(`Можно прибавлять к вектору только вектор типа Actor`);
     }
-    return (!this.actors) ? undefined : 
+    // лучше избегать использования тренарного оператора сравнения,
+    // он лишь усложняет чтение кода
+    // в данном случае проверку можно убрать
+    // целостность объекта лучше проверять в конструкторе
+    // форматирование
+    return (!this.actors) ? undefined :
     this.actors.find(currentActor => currentActor.isIntersect(actor));
   }
   obstacleAt(pos, size) {
@@ -89,7 +97,10 @@ class Level {
     }
     for (let i = topBorder; i < bottomBorder; i++) {
       for (let j = leftBorder; j < rightBorder; j++) {
+        // если значение присваивается переменной 1 раз,
+        // то лучше использовать const
         let obstacle = this.grid[i][j];
+        // тут можно написать просто if (obstacle)
         if (obstacle !== undefined) {
           return obstacle;
         }
@@ -100,7 +111,13 @@ class Level {
     this.actors = this.actors.filter(element => element !== actor);
   }
   noMoreActors(type) {
+    // проверку this.actors лучше делать в конструкторе
+    // правда поскольку там есть значения аргументов по-умолчанию
+    // this.actors всегда будет определено
+
     if (this.actors) {
+      // тут лучше использовать метод массива,
+      // который возвращает true/false и принимает функцию обратного вызова
       for (let actor of this.actors) {
         if (actor.type === type) {
           return false;
@@ -110,6 +127,8 @@ class Level {
     return true;
   }
   playerTouched(type, actor) {
+    // можно обратить условие и написать внутри if return
+    // тогда уменьшитя вложенность кода
     if (this.status === null) {
       if (type === 'lava' || type === 'fireball') {
         this.status = 'lost';
@@ -126,13 +145,17 @@ class Level {
 }
 
 class LevelParser {
+  // тут лучше добавить значение по0умолчанию,
+  // чтобы не проверять поле дальше по коду
   constructor(actorsDictionary) {
     this.actorsDictionary = actorsDictionary;
   }
   actorFromSymbol(symbol) {
+    // проверка лишняя
     return (symbol) ? this.actorsDictionary[symbol] : undefined;
   }
   obstacleFromSymbol(symbol) {
+    // никогда не пишите двойные тренарные опараторы
     return (symbol === 'x') ? 'wall' :
     (symbol === '!') ? 'lava' : 
     undefined;
@@ -141,10 +164,15 @@ class LevelParser {
     return stringArr.map(item => item.split('')).map(i => i.map(i => this.obstacleFromSymbol(i)));
   }
   createActors(stringArr = []) {
+    // в этом методе можно использовать reduce
     const actors = [];
     const array = stringArr.map(string => string.split(''));
     array.forEach((row, y) => {
       row.forEach((cell, x) => {
+        // первую часть проверки можно опустить,
+        // если добавить значение по-умолчанию в конструктор
+        // вторую часть проверки дублирует третья
+        // и тут дублируется логика actorFromSymbol
         if (this.actorsDictionary && this.actorsDictionary[cell] && typeof this.actorsDictionary[cell] === 'function') {
           const actor = new this.actorsDictionary[cell](new Vector(x, y));
           if (actor instanceof Actor) {
@@ -168,13 +196,16 @@ class Fireball extends Actor {
     return 'fireball';
   }
   getNextPosition(time = 1) {
+    // тут нужн оиспользовать методы класса Vector
     return new Vector(this.pos.x + this.speed.x * time, this.pos.y + this.speed.y * time);
   }
   handleObstacle() {
+    // тут нужн оиспользовать метод класса Vector
     this.speed.x = -this.speed.x;
     this.speed.y = -this.speed.y;
   }
   act(time, level) {
+    // переписать без ? :
     (level.obstacleAt(this.getNextPosition(time), this.size)) ?
     this.handleObstacle() :
     this.pos = this.getNextPosition(time);
@@ -184,6 +215,7 @@ class Fireball extends Actor {
 class HorizontalFireball extends Fireball {
   constructor(pos) {
     super(pos);
+    // pos, size, speed должны задаваться через вызов родительского конструктора
     this.speed = new Vector(2, 0);
     this.size = new Vector(1, 1);
   }
@@ -192,6 +224,7 @@ class HorizontalFireball extends Fireball {
 class VerticalFireball extends Fireball {
   constructor(pos) {
     super(pos);
+    // pos, size, speed должны задаваться через вызов родительского конструктора
     this.speed = new Vector(0, 2);
     this.size = new Vector(1, 1);
   }
@@ -200,6 +233,7 @@ class VerticalFireball extends Fireball {
 class FireRain extends Fireball {
   constructor(pos) {
     super(pos);
+    // pos, size, speed должны задаваться через вызов родительского конструктора
     this.speed = new Vector(0, 3);
     this.size = new Vector(1, 1);
     this.currentPos = pos;
@@ -238,6 +272,7 @@ class Coin extends Actor {
 class Player extends Actor {
   constructor(pos = new Vector(0, 0)) {
     super(pos.plus(new Vector(0, -0.5)));
+    // pos, size, speed должны задаваться через вызов родительского конструктора
     this.size = new Vector(0.8, 1.5);
     this.speed = new Vector(0, 0);
   }
