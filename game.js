@@ -58,16 +58,14 @@ class Level {
     this.player = this.actors.find(actor => actor.type === 'player');
     this.height = this.grid.length;
     // здесь можно использовать сокращённый вариант записи стрелочной функции
-    this.width = this.grid.reduce((a, b) => {
-      return b.length > a ? b.length : a;
-    }, 0);
+    this.width = this.grid.reduce((a, b) => b.length > a ? b.length : a, 0);
     this.status = null;
     this.finishDelay = 1;
   }
   isFinished() {
     // здесь не нужен тренарный оператор сравнения
     // this.status !== null && this.finishDelay < 0 это уже true или false
-    return (this.status !== null && this.finishDelay < 0) ? true : false;
+    return (this.status !== null && this.finishDelay < 0);
   }
   actorAt(actor) {
     if (!(actor instanceof Actor) || !actor) {
@@ -78,8 +76,7 @@ class Level {
     // в данном случае проверку можно убрать
     // целостность объекта лучше проверять в конструкторе
     // форматирование
-    return (!this.actors) ? undefined :
-    this.actors.find(currentActor => currentActor.isIntersect(actor));
+    return this.actors.find(currentActor => currentActor.isIntersect(actor));
   }
   obstacleAt(pos, size) {
     if (!(pos instanceof Vector) || !(size instanceof Vector)) {
@@ -99,9 +96,9 @@ class Level {
       for (let j = leftBorder; j < rightBorder; j++) {
         // если значение присваивается переменной 1 раз,
         // то лучше использовать const
-        let obstacle = this.grid[i][j];
+        const obstacle = this.grid[i][j];
         // тут можно написать просто if (obstacle)
-        if (obstacle !== undefined) {
+        if (obstacle) {
           return obstacle;
         }
       }
@@ -114,31 +111,24 @@ class Level {
     // проверку this.actors лучше делать в конструкторе
     // правда поскольку там есть значения аргументов по-умолчанию
     // this.actors всегда будет определено
-
-    if (this.actors) {
+    return !this.actors.some((actor) => actor.type === type);
       // тут лучше использовать метод массива,
       // который возвращает true/false и принимает функцию обратного вызова
-      for (let actor of this.actors) {
-        if (actor.type === type) {
-          return false;
-        }
-      }
-    }
-    return true;
   }
   playerTouched(type, actor) {
     // можно обратить условие и написать внутри if return
     // тогда уменьшитя вложенность кода
-    if (this.status === null) {
-      if (type === 'lava' || type === 'fireball') {
-        this.status = 'lost';
-        return this.status;
-      }
-      if (type === 'coin') {
-        this.removeActor(actor);
-        if (this.noMoreActors('coin')) {
-          this.status = 'won';
-        }
+    if (this.status !== null) {
+      return;
+    }
+    if (type === 'lava' || type === 'fireball') {
+      this.status = 'lost';
+      return this.status;
+    }
+    if (type === 'coin') {
+      this.removeActor(actor);
+      if (this.noMoreActors('coin')) {
+        this.status = 'won';
       }
     }
   }
@@ -147,41 +137,39 @@ class Level {
 class LevelParser {
   // тут лучше добавить значение по0умолчанию,
   // чтобы не проверять поле дальше по коду
-  constructor(actorsDictionary) {
+  constructor(actorsDictionary = {}) {
     this.actorsDictionary = actorsDictionary;
   }
   actorFromSymbol(symbol) {
     // проверка лишняя
-    return (symbol) ? this.actorsDictionary[symbol] : undefined;
+    return this.actorsDictionary[symbol];
   }
   obstacleFromSymbol(symbol) {
     // никогда не пишите двойные тренарные опараторы
-    return (symbol === 'x') ? 'wall' :
-    (symbol === '!') ? 'lava' : 
-    undefined;
+    if (symbol === 'x') {
+      return 'wall';
+    }
+    if (symbol === '!') {
+      return 'lava'; 
+    }
   }
   createGrid(stringArr = []) {
     return stringArr.map(item => item.split('')).map(i => i.map(i => this.obstacleFromSymbol(i)));
   }
-  createActors(stringArr = []) {
     // в этом методе можно использовать reduce
-    const actors = [];
-    const array = stringArr.map(string => string.split(''));
-    array.forEach((row, y) => {
-      row.forEach((cell, x) => {
-        // первую часть проверки можно опустить,
-        // если добавить значение по-умолчанию в конструктор
-        // вторую часть проверки дублирует третья
-        // и тут дублируется логика actorFromSymbol
-        if (this.actorsDictionary && this.actorsDictionary[cell] && typeof this.actorsDictionary[cell] === 'function') {
-          const actor = new this.actorsDictionary[cell](new Vector(x, y));
+  createActors(stringArr = []) {
+    return stringArr.reduce((string, row, y) => {
+      row.split('').forEach((cell, x) => {
+        const constructor = this.actorFromSymbol(cell);
+        if (typeof constructor === 'function') {
+          const actor = new constructor(new Vector(x, y));
           if (actor instanceof Actor) {
-            actors.push(actor);
+            string.push(actor);
           }
         }
       });
-    });
-    return actors;
+      return string;
+    }, []);
   }
   parse(stringArr = []) {
     return new Level(this.createGrid(stringArr), this.createActors(stringArr));
@@ -197,45 +185,40 @@ class Fireball extends Actor {
   }
   getNextPosition(time = 1) {
     // тут нужн оиспользовать методы класса Vector
-    return new Vector(this.pos.x + this.speed.x * time, this.pos.y + this.speed.y * time);
+    return this.pos.plus(this.speed.times(time));
   }
   handleObstacle() {
     // тут нужн оиспользовать метод класса Vector
-    this.speed.x = -this.speed.x;
-    this.speed.y = -this.speed.y;
+    this.speed = this.speed.times(-1);
   }
   act(time, level) {
     // переписать без ? :
-    (level.obstacleAt(this.getNextPosition(time), this.size)) ?
-    this.handleObstacle() :
-    this.pos = this.getNextPosition(time);
+    if (level.obstacleAt(this.getNextPosition(time), this.size)) {
+      this.handleObstacle();
+    } else {
+      this.pos = this.getNextPosition(time);
+    }
   }
 }
 
 class HorizontalFireball extends Fireball {
-  constructor(pos) {
-    super(pos);
+  constructor(pos = new Vector(0, 0)) {
+    super(pos, new Vector(2, 0), new Vector(1, 1));
     // pos, size, speed должны задаваться через вызов родительского конструктора
-    this.speed = new Vector(2, 0);
-    this.size = new Vector(1, 1);
   }
 }
 
 class VerticalFireball extends Fireball {
-  constructor(pos) {
-    super(pos);
+  constructor(pos = new Vector(0, 0)) {
+    super(pos, new Vector(0, 2), new Vector(1, 1));
     // pos, size, speed должны задаваться через вызов родительского конструктора
-    this.speed = new Vector(0, 2);
-    this.size = new Vector(1, 1);
   }
 }
 
 class FireRain extends Fireball {
-  constructor(pos) {
-    super(pos);
+  constructor(pos = new Vector(0, 0)) {
+    super(pos, new Vector(0, 3), new Vector(1, 1));
     // pos, size, speed должны задаваться через вызов родительского конструктора
-    this.speed = new Vector(0, 3);
-    this.size = new Vector(1, 1);
     this.currentPos = pos;
   }
   handleObstacle() {
@@ -271,10 +254,8 @@ class Coin extends Actor {
 
 class Player extends Actor {
   constructor(pos = new Vector(0, 0)) {
-    super(pos.plus(new Vector(0, -0.5)));
+    super(pos.plus(new Vector(0, -0.5)), new Vector(0.8, 1.5), new Vector(0, 0));
     // pos, size, speed должны задаваться через вызов родительского конструктора
-    this.size = new Vector(0.8, 1.5);
-    this.speed = new Vector(0, 0);
   }
   get type() {
     return 'player';
